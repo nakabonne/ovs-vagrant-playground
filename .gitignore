@@ -1,0 +1,3 @@
+.vagrant/*
+.vagrant.d
+vagrant/output-*
