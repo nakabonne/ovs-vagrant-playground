@@ -4,46 +4,57 @@ Vagrant.configure("2") do |config|
   config.vm.provider "virtualbox" do |v|
     v.memory = 512
   end
-  config.vm.provision :shell, inline: "sudo apt update && sudo apt upgrade -y"
+  config.vm.provision :shell, inline: "sudo apt-get update && sudo apt-get upgrade -y"
 
-  config.vm.define "dnsserver" do |dnsserver|
-    dnsserver.vm.hostname = "dnsserver"
-    dnsserver.vm.network "private_network", ip: "10.10.10.2", virtualbox__intnet: "h1switch"
-  end
   config.vm.define "h1" do |h1|
     h1.vm.hostname = "h1"
-    h1.vm.network "private_network", ip: "10.10.10.3", virtualbox__intnet: "h2switch"
+    h1.vm.network "private_network", ip: "192.168.60.2"
+    h1.vm.provision "shell", inline: <<-SHELL
+        # Install docker
+        sudo apt-get update
+        sudo apt-get install -y ca-certificates curl
+        sudo install -m 0755 -d /etc/apt/keyrings
+        sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+        sudo chmod a+r /etc/apt/keyrings/docker.asc
+        # Add the repository to Apt sources:
+        echo \
+          "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+          $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+          sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        sudo apt-get update
+
+        sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+        # Verify the installation is successful
+        sudo docker run hello-world
+
+        apt-get update
+        sudo apt-get install -y openvswitch-switch openvswitch-common bridge-utils
+    SHELL
   end
 
   config.vm.define "h2" do |h2|
     h2.vm.hostname = "h2"
-    h2.vm.network "private_network", ip: "10.10.10.4", virtualbox__intnet: "h3switch"
-  end
-  config.vm.define "mailserver" do |mailserver|
-    mailserver.vm.hostname = "mailserver"
-    mailserver.vm.network "private_network", ip: "10.10.10.5", virtualbox__intnet: "h4switch"
-  end
-  config.vm.define "switch" do |switch|
-    switch.vm.box = "ubuntu/jammy64"
-    switch.vm.hostname = "switch"
-    switch.vm.network "private_network", ip: "10.10.30.10", virtualbox__intnet: "h1switch", nic_type: "virtio"
-    switch.vm.network "private_network", ip: "10.10.30.20", virtualbox__intnet: "h2switch", nic_type: "virtio"
-    switch.vm.network "private_network", ip: "10.10.30.30", virtualbox__intnet: "h3switch", nic_type: "virtio"
-    switch.vm.network "private_network", ip: "10.10.30.40", virtualbox__intnet: "h4switch", nic_type: "virtio"
-    switch.vm.provision "shell", inline: <<-SHELL
-        apt update
-        apt install -y openvswitch-switch
-        ovs-vsctl add-br br0
-        ovs-vsctl add-port br0 enp0s8 tag=10
-        ovs-vsctl add-port br0 enp0s9 tag=20
-        ovs-vsctl add-port br0 enp0s10 tag=20
-        ovs-vsctl add-port br0 enp0s16 tag=10
+    h2.vm.network "private_network", ip: "192.168.60.3"
+    h2.vm.provision "shell", inline: <<-SHELL
+        # Install docker
+        sudo apt-get update
+        sudo apt-get install -y ca-certificates curl
+        sudo install -m 0755 -d /etc/apt/keyrings
+        sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+        sudo chmod a+r /etc/apt/keyrings/docker.asc
+        # Add the repository to Apt sources:
+        echo \
+          "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+          $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+          sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        sudo apt-get update
+
+        sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+        # Verify the installation is successful
+        sudo docker run hello-world
+
+        apt-get update
+        sudo apt-get install -y openvswitch-switch openvswitch-common bridge-utils
     SHELL
-    switch.vm.provider "virtualbox" do |virtualbox|
-      virtualbox.customize [ "modifyvm", :id, "--nicpromisc2", "allow-vms" ]
-      virtualbox.customize [ "modifyvm", :id, "--nicpromisc3", "allow-vms" ]
-      virtualbox.customize [ "modifyvm", :id, "--nicpromisc4", "allow-vms" ]
-      virtualbox.customize [ "modifyvm", :id, "--nicpromisc5", "allow-vms" ]
-    end
   end
 end

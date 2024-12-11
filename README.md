@@ -23,4 +23,4 @@ make vagrant-down
 
 ## Ref
 
-- https://medium.com/@paceadrianolavoro/vlans-with-virtualbox-vagrant-and-ovs-switch-routing-7c872720b8e7
+- https://docker-k8s-lab.readthedocs.io/en/latest/docker/docker-ovs.html
